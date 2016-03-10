@@ -1,8 +1,9 @@
 import numpy as np
 from numba import jit
+import matplotlib.pyplot as plt
 
 N = 100
-L=0
+L=2
 
 eps = 0.25
 sigma = 0.8
@@ -43,6 +44,7 @@ def calc_energy(possible_positions):
         ir6 = ir2 * ir2 * ir2
         ir12 = ir6 * ir6
         interaction_energy[i+1,j] = 4 * eps * (ir12 - ir6)
+
 
 
 
