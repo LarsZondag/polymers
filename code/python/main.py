@@ -3,7 +3,7 @@ from numba import jit
 import matplotlib.pyplot as plt
 import bisect
 
-N = 5000
+N = 100000
 L=2
 
 eps = 0.25
@@ -39,7 +39,7 @@ def calc_energy(possible_positions, bead):
     interaction_energy = np.zeros(size)
     interaction_energy += 4*eps*(sigma**12-sigma**6)
     for j in range(size):
-        for i in range(bead-2):
+        for i in range(bead-1):
             possible_positions_dx = possible_positions[j, 0] - polymer[i,0]
             possible_positions_dy = possible_positions[j, 1] - polymer[i,1]
             distance = possible_positions_dx*possible_positions_dx + possible_positions_dy*possible_positions_dy
