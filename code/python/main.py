@@ -17,7 +17,6 @@ d_theta = 2 * np.pi / (N_angles)
 static_angles = np.linspace(0, 2*np.pi-d_theta, N_angles)
 pol_weight = 1
 random_numbers = np.random.uniform(0, 1, N)
-random_angles = 2 * np.pi * np.random.uniform(0, 1, (N, N_angles))
 
 # Initialize:
 polymer[1,1] = 1
@@ -25,7 +24,8 @@ polymer[1,1] = 1
 
 def calc_boltz_weights(bead):
     possible_positions = np.zeros((N_angles, 2))
-    angles = static_angles + random_angles[bead, :]
+    random_angle = 2*np.pi*np.random.rand()
+    angles = static_angles + random_angle
     # print(angles*180/np.pi)
     possible_positions[:,0] = polymer[bead-1, 0] + np.cos(angles)
     possible_positions[:,1] = polymer[bead-1, 1] + np.sin(angles)
