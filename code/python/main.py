@@ -3,7 +3,7 @@ from numba import jit
 import matplotlib.pyplot as plt
 import bisect
 
-N = 600
+N = 250
 L=2
 
 eps = 0.25
@@ -12,7 +12,7 @@ sigma2 = sigma**2
 T = 1
 
 polymer = np.zeros((N, 2))
-N_angles = 4
+N_angles = 6
 d_theta = 2 * np.pi / (N_angles)
 static_angles = np.linspace(0, 2*np.pi-d_theta, N_angles)
 pol_weight = 1
@@ -53,17 +53,18 @@ def calc_energy(possible_positions, bead):
     return interaction_energy
 
 for i in range(L, N):
-    print("bead #: ", i)
+    #print("bead #: ", i)
     possible_positions, w_i, W = calc_boltz_weights(i)
     score = W * random_numbers[i]
-    index = bisect.bisect(np.cumsum(w_i), score)
+    index = bisect.bisect(w_i, score)
     index = min(index, N_angles-1)
-    print("Chosen chance: ", w_i[index]/W)
+    #print("Chosen chance: ", w_i[index]/W)
     polymer[i,:] = possible_positions[index]
 
 
 
 
 
-plt.plot(polymer[:,0], polymer[:,1], linestyle='-.', marker='o')
+# plt.plot(polymer[:,0], polymer[:,1], linestyle='-.', marker='o')
+plt.plot(polymer[:,0], polymer[:,1])
 plt.show()
