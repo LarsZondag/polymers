@@ -5,7 +5,7 @@ import bisect
 
 
 class Polymer:
-    def __init__(self, length, number_of_angles, temperature):
+    def __init__(self, length, number_of_angles, temperature, perm = True):
         self.L = length
         self.N_angles = number_of_angles
         self.population = np.zeros((self.L, 2))
@@ -15,6 +15,7 @@ class Polymer:
         self.sigma2 = self.sigma ** 2
         self.epsilon = 0.25
         self.T = temperature
+
 
 
     def populate(self):
@@ -73,5 +74,4 @@ class Polymer:
 
     def get_end_to_end(self):
         return np.linalg.norm(self.population[0] - self.population[-1]) ** 2
-
 
