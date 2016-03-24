@@ -1,26 +1,28 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numba import jit
 
-L = 15
+L = 250
 N_angles = 6
 sigma = 0.8
 sigma2 = 0.8 ** 2
 epsilon = 0.25
 T = 1
-pop_per_angle = 100
+pop_per_angle = 10000
 static_angles = np.linspace(0, 2 * np.pi, N_angles, False)
 pos_new = np.zeros((N_angles, 2))
-max_pop = 5 * pop_per_angle
-end_to_end = np.zeros((L, max_pop))
+max_pop = 3 * pop_per_angle
+ete = np.zeros((L, max_pop))
 pol_weights = np.zeros((L, max_pop))
 
 
-mean_end_to_end = np.zeros(L)
+mean_ete = np.zeros(L)
 
 polymer_index = np.zeros(L, dtype=int)
 
 initial_population = np.zeros((L, 2))
 
+@jit
 def calc_energy(population, possible_positions, bead):
     interaction_energy = np.zeros(N_angles)
     for j in range(N_angles):
@@ -49,7 +51,7 @@ def choose_angle(weights):
             pos_index += 1
         return pos_index
 
-def get_end_to_end(population, bead):
+def get_ete(population, bead):
         return np.linalg.norm(population[0] - population[bead]) ** 2
 
 def add_bead(population, bead = 0, pol_weight = 1, perm = True):
@@ -60,43 +62,44 @@ def add_bead(population, bead = 0, pol_weight = 1, perm = True):
 
     energies = calc_energy(population, pos_new, bead)
     weights = np.exp(-energies/T)
+    weights[np.isnan(weights)] = 0
     weights_sum = np.sum(weights)
     pol_weight *= weights_sum / (0.75 * N_angles)
 
     angle_index = choose_angle(weights)
     population[bead + 1] = pos_new[angle_index]
-    print("Added bead: ", bead + 1)
+    # print("Added bead: ", bead + 1)
     # print("Weight of this chain is: ", pol_weight)
 
-    end_to_end[bead +1, polymer_index[bead + 1]] = get_end_to_end(population, bead + 1)
+    ete[bead +1, polymer_index[bead + 1]] = get_ete(population, bead + 1)
     pol_weights[bead + 1, polymer_index[bead + 1]] = pol_weight
 
     # print(pol_weights[2])
     polymer_index[bead + 1] +=1
-    pol_weight_3 = pol_weights[2, polymer_index[2] - 1]
+    pol_weight_3 = np.mean(pol_weights[2, :(polymer_index[2] - 1)])
     # print("pol_weight_3: ", pol_weight_3)
     pol_weights_mean = np.mean(pol_weights[bead + 1, :polymer_index[bead + 1]])
     # print(pol_weights_mean)
 
 
-
     limit_upper = 2.0 * pol_weight_3 / pol_weights_mean
     limit_lower = 1.2 * pol_weight_3 / pol_weights_mean
+
 
     if perm:
         if polymer_index[bead+1] > max_pop - 2 and bead < L - 2:
             add_bead(population, bead + 1, pol_weight)
         elif bead < L - 2:
             if pol_weight > limit_upper:
-                print("ENRICHING")
+                # print("ENRICHING")
                 add_bead(population, bead + 1, pol_weight / 2)
                 add_bead(population, bead + 1, pol_weight / 2)
             elif pol_weight < limit_lower:
-                print("GOING TO PRUNE")
+                # print("GOING TO PRUNE")
                 if np.random.rand(1) < 0.5:
                     add_bead(population, bead + 1, 2 * pol_weight)
             else:
-                print("no perm")
+                # print("no perm")
                 add_bead(population, bead + 1, pol_weight)
         else:
             return
@@ -109,15 +112,18 @@ for i in range(pop_per_angle):
     print("Going to add polymer: ", i)
     add_bead(initial_population)
 
-end_to_end_avg = np.average(end_to_end[2:], weights=pol_weights[2:], axis=1)
-end_to_end_var = np.average(end_to_end[2:]**2, weights=pol_weights[2:], axis=1) - end_to_end_avg**2
-end_to_end_error = np.sqrt(end_to_end_var/pop_per_angle)
+print(pol_weights)
+print(ete)
+
+ete_avg = np.average(ete[2:], weights=pol_weights[2:], axis=1)
+ete_var = np.average(ete[2:]**2, weights=pol_weights[2:], axis=1) - ete_avg**2
+ete_error = np.sqrt(ete_var/pop_per_angle)
 
 lengths = np.arange(2, L)
 
-plt.loglog(lengths, end_to_end_avg)
+plt.loglog(lengths, ete_avg)
 
 plt.xlim(2,L*1.3)
-plt.ylim(end_to_end_avg[0],end_to_end_avg[L-3]*1.3)
+plt.ylim(ete_avg[0],ete_avg[L-3]*1.3)
 
 plt.show()
