@@ -1,20 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
+from scipy.optimize import curve_fit
 
-L = 250
+L = 150
 N_angles = 6
 sigma = 0.8
 sigma2 = 0.8 ** 2
 epsilon = 0.25
 T = 1
-pop_per_angle = 10
+pop_per_angle = 40
 static_angles = np.linspace(0, 2 * np.pi, N_angles, False)
 pos_new = np.zeros((N_angles, 2))
 max_pop = 50 * pop_per_angle
 ete = np.zeros((L, max_pop))
 pol_weights = np.zeros((L, max_pop))
 pol_weights[1, 0] = 1
+prunes = np.zeros((L))
+enrichments = np.zeros((L))
 
 mean_ete = np.zeros(L)
 
@@ -83,12 +86,14 @@ def add_bead(population, bead = 1, pol_weight = 1, perm = True):
             limit_upper = 2 * pol_weights_mean.mean() / pol_weight_3
             limit_lower = 1.2 * pol_weights_mean.mean() / pol_weight_3
             if pol_weight > limit_upper:
-                print("ENRICHING")
+                # print("ENRICHING")
+                enrichments[bead] += 1
                 add_bead(population, bead + 1, pol_weight / 2)
                 add_bead(population, bead + 1, pol_weight / 2)
             elif pol_weight < limit_lower:
                 if np.random.rand() < 0.5:
-                    print("GOING TO PRUNE")
+                    # print("GOING TO PRUNE")
+                    prunes[bead] += 1
                     add_bead(population, bead + 1, 2 * pol_weight)
             else:
                 # print("no perm")
@@ -101,13 +106,30 @@ for i in range(pop_per_angle):
     add_bead(initial_population)
 
 
+# Statistics
+
 ete_avg = np.average(ete[2:], weights=pol_weights[2:], axis=1)
 ete_var = np.average(ete[2:]**2, weights=pol_weights[2:], axis=1) - ete_avg**2
 ete_error = np.sqrt(ete_var/pop_per_angle)
 
 lengths = np.arange(2, L)
 
+# Defining functions
+
+def func(x, a):
+    return 1.18 * np.power(x, a)
+
+# Fitting the data
+
+popt, pcov = curve_fit(func, lengths, ete_avg, bounds=(0, [3.]))
+print(popt)
+
+# Plotting
+
 plt.loglog(lengths, ete_avg)
+plt.loglog(lengths, func(lengths, popt))
+plt.loglog(lengths, prunes[2:])
+plt.loglog(lengths, enrichments[2:])
 
 plt.xlim(2,L*1.3)
 # plt.ylim(ete_avg[0],ete_avg[L-3]*1.3)
