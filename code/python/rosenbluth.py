@@ -3,17 +3,18 @@ import matplotlib.pyplot as plt
 from numba import jit
 from scipy.optimize import curve_fit
 
-L = 150
+L = 250
 N_angles = 6
 sigma = 0.8
 sigma2 = 0.8 ** 2
 epsilon = 0.25
 T = 1
-pop_per_angle = 40
+pop_per_angle = 250
 static_angles = np.linspace(0, 2 * np.pi, N_angles, False)
 pos_new = np.zeros((N_angles, 2))
 max_pop = 50 * pop_per_angle
 ete = np.zeros((L, max_pop))
+R_G_2 = np.zeros((L, max_pop))
 pol_weights = np.zeros((L, max_pop))
 pol_weights[1, 0] = 1
 prunes = np.zeros((L))
@@ -40,6 +41,13 @@ def calc_energy(population, possible_positions, bead):
             interaction_energy[j] += 4 * epsilon * (ir12 - ir6)
     return interaction_energy
 
+def calc_radius_of_gyration(population, bead):
+    R_G = np.mean(population[:bead], axis=0)
+    R_G_x_2 = np.power(population[:bead, 0] - R_G[0], 2)
+    R_G_y_2 = np.power(population[:bead, 1] - R_G[1], 2)
+    R_G_2 = np.mean(R_G_x_2 + R_G_y_2)
+    return R_G_2
+
 def calc_angles():
     random_angle = 2 * np.pi * np.random.rand()
     return static_angles + random_angle
@@ -56,7 +64,6 @@ def get_ete(population, bead):
         return np.linalg.norm(population[0] - population[bead]) ** 2
 
 def add_bead(population, bead = 1, pol_weight = 1, perm = True):
-    # print("Now at bead: ", bead + 1)
     if bead + 1 >= L or polymer_index[bead + 1] >= max_pop:
         return
 
@@ -75,6 +82,7 @@ def add_bead(population, bead = 1, pol_weight = 1, perm = True):
     population[bead + 1] = pos_new[angle_index]
 
     ete[bead +1, polymer_index[bead + 1]] = get_ete(population, bead + 1)
+    R_G_2[bead + 1, polymer_index[bead + 1]] = calc_radius_of_gyration(population, bead + 1)
     pol_weights[bead + 1, polymer_index[bead + 1]] = pol_weight
 
     pol_weight_3 = np.sum(pol_weights[2, :polymer_index[2]])
@@ -103,6 +111,7 @@ def add_bead(population, bead = 1, pol_weight = 1, perm = True):
 
 
 for i in range(pop_per_angle):
+    print("Starting polymer ", i, " out of ", pop_per_angle)
     add_bead(initial_population)
 
 
@@ -112,26 +121,34 @@ ete_avg = np.average(ete[2:], weights=pol_weights[2:], axis=1)
 ete_var = np.average(ete[2:]**2, weights=pol_weights[2:], axis=1) - ete_avg**2
 ete_error = np.sqrt(ete_var/pop_per_angle)
 
+R_G_2_avg = np.average(R_G_2[2:], weights=pol_weights[2:], axis=1)
+R_G_2_var = np.average(R_G_2[2:]**2, weights=pol_weights[2:], axis=1) - R_G_2_avg**2
+R_G_2_error = np.sqrt(R_G_2_var/polymer_index[2:])
+
 lengths = np.arange(2, L)
 
 # Defining functions
 
-def func(x, a):
-    return 1.18 * np.power(x, a)
+def func(x, a, b):
+    return a * np.power(x - 1, b)
 
 # Fitting the data
 
-popt, pcov = curve_fit(func, lengths, ete_avg, bounds=(0, [3.]))
+popt, pcov = curve_fit(func, lengths, ete_avg, bounds=(0, [3., 3.]))
 print(popt)
 
 # Plotting
 
-plt.loglog(lengths, ete_avg)
-plt.loglog(lengths, func(lengths, popt))
-plt.loglog(lengths, prunes[2:])
-plt.loglog(lengths, enrichments[2:])
+ax = plt.subplot(211)
+ax.set_xscale("log", nonposx='clip')
+ax.set_yscale("log", nonposy='clip')
 
-plt.xlim(2,L*1.3)
-# plt.ylim(ete_avg[0],ete_avg[L-3]*1.3)
+plt.errorbar(lengths, ete_avg, yerr=ete_error, linestyle='None', marker='x')
+plt.plot(lengths, func(lengths, popt[0], popt[1]))
+plt.plot(lengths, polymer_index[2:], linestyle='None', marker='o', mfc='None')
 
+ax = plt.subplot(212)
+ax.set_xscale("log", nonposx='clip')
+ax.set_yscale("log", nonposy='clip')
+plt.plot(lengths, R_G_2_avg)
 plt.show()
