@@ -118,7 +118,7 @@ def add_bead(population, static_angles, bead = 1, pol_weight = 1, perm = True):
 
 
 for i in range(pop_polymers):
-    # print("Starting polymer ", i, " out of ", pop_polymers)
+    print("Starting polymer ", i, " out of ", pop_polymers)
     add_bead(initial_population, global_static_angles)
 
 
@@ -137,7 +137,7 @@ lengths = np.arange(2, L)
 # Defining functions
 
 def func(x, a, b):
-    return a * np.power(x - 1, b)
+    return a * np.power(x , b)
 
 # Fitting the data
 
