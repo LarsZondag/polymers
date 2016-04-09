@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 from numba import jit
 from scipy.optimize import curve_fit
 
-L = 50
+L = 250 #Length of beads
 number_of_angles = 6
 sigma = 0.8
 sigma2 = 0.8 ** 2
 epsilon = 0.25
 T = 1
-pop_per_angle = 100
+pop_polymers = 10000
 global_static_angles = np.linspace(0, 2 * np.pi, number_of_angles, False)
-max_pop = 50 * pop_per_angle # Maximum population, this is done in case there are more enrichments than prunes
+max_pop = 50 * pop_polymers # Maximum population, this is done in case there are more enrichments than prunes
 ete = np.zeros((L, max_pop)) # End-to-end distance squared
 R_G_2 = np.zeros((L, max_pop)) # Gyration radius squared
 # Initialize the starting polymer weights. This is the same for every starting polymer:
@@ -117,8 +117,8 @@ def add_bead(population, static_angles, bead = 1, pol_weight = 1, perm = True):
         add_bead(population, static_angles, bead + 1, pol_weight, perm)
 
 
-for i in range(pop_per_angle):
-    print("Starting polymer ", i, " out of ", pop_per_angle)
+for i in range(pop_polymers):
+    # print("Starting polymer ", i, " out of ", pop_polymers)
     add_bead(initial_population, global_static_angles)
 
 
@@ -126,7 +126,7 @@ for i in range(pop_per_angle):
 
 ete_avg = np.average(ete[2:], weights=pol_weights[2:], axis=1)
 ete_var = np.average(ete[2:]**2, weights=pol_weights[2:], axis=1) - ete_avg**2
-ete_error = np.sqrt(ete_var/pop_per_angle)
+ete_error = np.sqrt(ete_var/pop_polymers)
 
 R_G_2_avg = np.average(R_G_2[2:], weights=pol_weights[2:], axis=1)
 R_G_2_var = np.average(R_G_2[2:]**2, weights=pol_weights[2:], axis=1) - R_G_2_avg**2
@@ -153,6 +153,7 @@ ete_fig = plt.figure()
 ax = plt.subplot(111)
 ax.set_xscale("log", nonposx='clip')
 ax.set_yscale("log", nonposy='clip')
+ax.set_ylim([1, pop_polymers + 0.1*pop_polymers])
 
 plt_ete = ax.errorbar(lengths, ete_avg, yerr=ete_error, linestyle='None', marker='x')
 plt_ete_fit, = ax.plot(lengths, func(lengths, ete_params[0], ete_params[1]))

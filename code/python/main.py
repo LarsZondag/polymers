@@ -11,8 +11,8 @@ lengths = np.linspace(starting_length, stop_length, length_steps)
 lengths = np.ceil(lengths)
 T = 1
 N_angles = 6
-pop_size = 100000
-N = 50
+pop_size = 10000
+N = 250
 
 
 pol = Polymer(N, N_angles, T)
